@@ -1,0 +1,75 @@
+services:
+  proxy:
+    image: nginx:1.27-alpine
+    container_name: imageserver_proxy
+    ports:
+      - "${IMAGESERVER_PORT:-8080}:80"
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - wordpress
+    networks:
+      - imageserver
+
+  wordpress:
+    image: wordpress:6.8-apache
+    container_name: imageserver_wordpress
+    environment:
+      WORDPRESS_DB_HOST: db
+      WORDPRESS_DB_USER: ${WORDPRESS_DB_USER:-imageserver}
+      WORDPRESS_DB_PASSWORD: ${WORDPRESS_DB_PASSWORD:-imageserver}
+      WORDPRESS_DB_NAME: ${WORDPRESS_DB_NAME:-imageserver}
+    volumes:
+      - wordpress_data:/var/www/html
+      - ../:/var/www/html/wp-content/plugins/imageserver:ro
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - imageserver
+
+  db:
+    image: mariadb:11.4
+    container_name: imageserver_db
+    environment:
+      MARIADB_DATABASE: ${WORDPRESS_DB_NAME:-imageserver}
+      MARIADB_USER: ${WORDPRESS_DB_USER:-imageserver}
+      MARIADB_PASSWORD: ${WORDPRESS_DB_PASSWORD:-imageserver}
+      MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD:-imageserver-root}
+    volumes:
+      - db_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    networks:
+      - imageserver
+
+  wpcli:
+    image: wordpress:cli
+    container_name: imageserver_wpcli
+    profiles:
+      - setup
+    user: "33:33"
+    working_dir: /var/www/html
+    environment:
+      WORDPRESS_DB_HOST: db
+      WORDPRESS_DB_USER: ${WORDPRESS_DB_USER:-imageserver}
+      WORDPRESS_DB_PASSWORD: ${WORDPRESS_DB_PASSWORD:-imageserver}
+      WORDPRESS_DB_NAME: ${WORDPRESS_DB_NAME:-imageserver}
+    volumes:
+      - wordpress_data:/var/www/html
+      - ../:/var/www/html/wp-content/plugins/imageserver:ro
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - imageserver
+
+networks:
+  imageserver:
+
+volumes:
+  wordpress_data:
+  db_data:
