@@ -3,6 +3,12 @@
 
 WordPress plugin to use an image server instead of WooCommerce media-library images for product output.
 
+
+## Dashboard Login:
+login: https://www.app.local
+user: imageserver
+pass: PassPassPass666
+
 ## Behavior
 
 The plugin reads the syncer-provided product meta `picture_paths` and variation meta `picture_path`. It rewrites the front-end product, variation, gallery, catalog, cart, and email image HTML without uploading or proxying image files.
@@ -63,3 +69,5 @@ docker compose -f dockers/docker-compose.yml run --rm wpcli plugin install wooco
 docker compose -f dockers/docker-compose.yml run --rm wpcli plugin activate imageserver
 docker compose -f dockers/docker-compose.yml down
 ```
+
+
