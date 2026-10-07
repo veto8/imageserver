@@ -27,6 +27,7 @@ services:
       - ../plugins/imageserver:/var/www/html/wp-content/plugins/imageserver
       - ../plugins/woocommerce:/var/www/html/wp-content/plugins/woocommerce
       - ../plugins/plugin-check:/var/www/html/wp-content/plugins/plugin-check
+      - ../mu-plugins/:/var/www/html/wp-content/mu-plugins
     depends_on:
       db:
         condition: service_healthy
