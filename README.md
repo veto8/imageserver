@@ -29,9 +29,10 @@ Press **Fetch patterns from server** to read the pattern list from
 can override the fetched values. When the source changes, a warning on the
 settings screen reminds you to fetch again.
 
-The fetched manifest also carries working examples, shown below the fields as a
-**Server examples** table with a link and a live image preview for each
-pattern. If the previews load, the image server is reachable and serving files.
+The settings screen shows a **Server examples** table with a link and a live
+image preview for each pattern. Before the first fetch it uses built-in default
+examples; fetching replaces them with the server's own list. If the previews
+load, the image server is reachable and serving files.
 
 The `{path}` placeholder is replaced with the product image path and
 `{width}`/`{height}` with the WooCommerce image size in pixels.

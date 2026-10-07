@@ -33,7 +33,7 @@ Single option `imageserver_settings` (array), page at Settings → Image Server,
 - `resize_style` — `canvas` or `resize`, default `canvas`; chooses which server pattern fills `resize_pattern`.
 - `original_pattern` — default `/img/{path}`; used when no size is passed. Fetched from the server, editable to override.
 - `resize_pattern` — default `/canvas/{width}/{path}`. Fetched from the server, editable to override. Uses `{width}`/`{height}` — the server's canvas route expects an integer width, so the old `{size}` (a WooCommerce slug like `woocommerce_single`) is not used.
-- `patterns_source`, `patterns_fetched_at`, `patterns_examples` — bookkeeping: which source the manifest was fetched from, when, and the server's example relative paths keyed by pattern. Preserved across `options.php` saves (they are not form fields).
+- `patterns_source`, `patterns_fetched_at`, `patterns_examples` — bookkeeping: which source the manifest was fetched from, when, and the server's example relative paths keyed by pattern. Preserved across `options.php` saves (they are not form fields). `defaults()` seeds `patterns_examples` with the known rimgs files, so the settings screen shows previews before the first fetch; a real fetch replaces them with the server's own list.
 - `sanitize_pattern()` appends `{path}` if missing and force-prefixes a leading `/`, so a pattern can never escape the source host.
 
 ### Manifest fetch

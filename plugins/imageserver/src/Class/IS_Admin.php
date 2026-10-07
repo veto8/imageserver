@@ -71,6 +71,8 @@ class IS_Admin
             admin_url('admin-post.php?action=imageserver_fetch_patterns'),
             'imageserver_fetch_patterns'
         );
+        $using_default_examples = empty($settings['patterns_examples']);
+        $examples = $using_default_examples ? self::defaults()['patterns_examples'] : $settings['patterns_examples'];
         ?>
         <div class="wrap">
             <h1>Image Server</h1>
@@ -89,12 +91,17 @@ class IS_Admin
                         on <?php echo esc_html(wp_date(get_option('date_format') . ' ' . get_option('time_format'), (int) $settings['patterns_fetched_at'])); ?>.
                     </span>
                 <?php else : ?>
-                    <span class="description">Patterns have not been fetched from the server yet.</span>
+                    <span class="description">Patterns have not been fetched from the server yet; the examples below are built-in defaults.</span>
                 <?php endif; ?>
             </p>
-            <?php if (!empty($settings['patterns_examples'])) : ?>
+            <?php if (!empty($examples)) : ?>
                 <h2>Server examples</h2>
-                <p class="description">Live files on <?php echo esc_html(untrailingslashit($settings['source'])); ?>. If the previews load, the image server is reachable from your browser.</p>
+                <p class="description">
+                    Live files on <?php echo esc_html(untrailingslashit($settings['source'])); ?>. If the previews load, the image server is reachable from your browser.
+                    <?php if ($using_default_examples) : ?>
+                        These are built-in defaults — press <strong>Fetch patterns from server</strong> to load the server's own list.
+                    <?php endif; ?>
+                </p>
                 <table class="widefat striped">
                     <thead>
                         <tr>
@@ -104,7 +111,7 @@ class IS_Admin
                         </tr>
                     </thead>
                     <tbody>
-                        <?php foreach ($settings['patterns_examples'] as $example_key => $example_path) : ?>
+                        <?php foreach ($examples as $example_key => $example_path) : ?>
                             <?php $example_url = untrailingslashit($settings['source']) . $example_path; ?>
                             <tr>
                                 <td><code><?php echo esc_html($example_key); ?></code></td>
@@ -252,7 +259,12 @@ class IS_Admin
             'resize_pattern' => '/canvas/{width}/{path}',
             'patterns_source' => '',
             'patterns_fetched_at' => 0,
-            'patterns_examples' => [],
+            'patterns_examples' => [
+                'plain' => '/img/CHM/14CM01-CR.png',
+                'resize' => '/img/x/150/150/CHM/14CM01-CR.png',
+                'canvas' => '/canvas/250/P8/TMCBC-AN.png',
+                'composite' => '/comp/BKBNJP2/120/STK/P-STK319-RO.png',
+            ],
         ];
     }
 
