@@ -13,6 +13,8 @@ pass: PassPassPass666
 
 The plugin reads the syncer-provided product meta `picture_paths` and variation meta `picture_path`. It rewrites the front-end product, variation, gallery, catalog, cart, and email image HTML without uploading or proxying image files.
 
+On the product edit screen the **Image server paths** box lists each path as a thumbnail with a **Delete** button; add new ones with the **Add image** field. They save as `picture_paths` and are replaced by the syncer on its next run. Variations have a single **Image server path** field.
+
 If the meta value is missing, the original WooCommerce image output is preserved.
 
 ## Settings

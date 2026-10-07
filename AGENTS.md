@@ -71,11 +71,17 @@ Meta written by the syncer, not by this plugin:
 - product: `picture_paths` (plural)
 - variation: `picture_path` (singular), falling back to the parent's `picture_paths` when empty.
 
+The product edit screen gets an **Image server paths** meta box (`IS_Product_Meta`): every path is listed with a live `<img>` thumbnail and a **Delete** button, and new paths are added through an **Add image** text input (small inline JS, no editor/textarea). Saving posts the remaining rows as `picture_paths[]`, so `save_product()` must accept an array (not just a string). Variations keep the single **Image server path** field. The sync replaces these values on its next run.
+
 `collect_paths()` accepts a JSON array, a real array, or a delimited string (`;`, `,`, `|`), trims, drops empties, and de-dupes. Paths may be absolute `http(s)://` URLs, which are passed through untouched; otherwise each segment is `rawurlencode`d and appended to `source + pattern`. `path_url()` substitutes `{path}`, `{size}`, `{width}` and `{height}`, where the dimensions come from `wc_get_image_size()` (falling back to `width == height`).
 
 ## Hooks (IS_Frontend::register)
-Bails early when `is_admin() && !wp_doing_ajax()`, when WooCommerce is absent, or when disabled. Otherwise:
-`woocommerce_single_product_image_thumbnail_html`, `woocommerce_product_get_image`, `woocommerce_cart_item_thumbnail`, `woocommerce_order_item_thumbnail` — all at priority 10.
+Bails early when WooCommerce is absent or when disabled. `woocommerce_product_get_image` is registered on **both admin and front end** so the product list column (`WC_Admin_List_Table_Products::column_thumb`, `$product->get_image('thumbnail')`) shows the server image too. The remaining hooks register on the front end only (early-return when `is_admin()`):
+`woocommerce_single_product_image_thumbnail_html`, `woocommerce_cart_item_thumbnail`, `woocommerce_order_item_thumbnail`, `woocommerce_store_api_cart_item_images`, `render_block` — all at priority 10.
+
+The **Cart block** and **mini-cart block** are rendered client-side from the Store API (`/wc/store/v1/cart`), whose images come from attachments (`ProductSchema::get_images()`), so `get_image` never runs. `cart_item_images()` hooks `woocommerce_store_api_cart_item_images` and, only when the response has no images, injects one image object (`id` = product id, `src`/`thumbnail` from `path_url()`), matching `ImageAttachmentSchema`. It never overrides a real featured image.
+
+`woocommerce_product_get_image` fires even when there is no featured image (the placeholder path), so classic loops and the admin list are covered. The **block** Product Image (`woocommerce/product-image`) short-circuits to `wc_placeholder_img()` when `get_image_id()` is 0, before the filter runs, so `render_block()` catches that: it reads `$instance->context['postId']`, builds a URL from `picture_paths` using the `<img>` `width`/`height` attributes, and rewrites `src`/`srcset` only (via `rewrite_sources()`, which leaves the product permalink `href` alone). Non-product-image blocks pass through untouched. `path_url()` accepts optional `$width`/`$height` overrides that supersede `size_dimensions()`.
 
 `rewrite_html()` replaces `src`, `data-thumb`, `href` and rewrites `srcset` to a single `1x` entry, using a regex callback so the original quote style is preserved. If the meta is missing, the index does not exist, or the HTML has no `<img`, the original HTML is returned untouched — preserve that fallback in any change.
 

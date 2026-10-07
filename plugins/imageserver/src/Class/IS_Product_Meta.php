@@ -63,22 +63,106 @@ class IS_Product_Meta
         wp_nonce_field(self::NONCE_ACTION, self::NONCE_FIELD);
 
         $paths = $this->normalize_paths(get_post_meta($post->ID, self::PRODUCT_KEY, true));
+        $settings = wp_parse_args((array) get_option(IS_Admin::OPTION, []), IS_Admin::defaults());
+        $source = untrailingslashit($settings['source']);
+        $pattern = $settings['original_pattern'];
         ?>
-        <p>
-            One image server path per line, in <code>category/name</code> form, for example
-            <code>BC/BCSB51.png</code>. Leave empty when the product has no image server images.
-        </p>
-        <textarea
-            name="<?php echo esc_attr(self::PRODUCT_FIELD); ?>"
-            id="imageserver-<?php echo esc_attr(self::PRODUCT_FIELD); ?>"
-            rows="6"
-            class="large-text code"
-            spellcheck="false"
-        ><?php echo esc_textarea(implode("\n", $paths)); ?></textarea>
-        <p class="description">
-            The product sync writes this key, so values entered here are replaced on the next sync of
-            this product.
-        </p>
+        <div
+            class="imageserver-paths"
+            data-source="<?php echo esc_attr($source); ?>"
+            data-pattern="<?php echo esc_attr($pattern); ?>"
+            data-field="<?php echo esc_attr(self::PRODUCT_FIELD); ?>"
+        >
+            <p class="description">
+                The images the front end serves, in <code>category/name</code> form, for example
+                <code>BC/BCSB51.png</code>. The product sync overwrites this list on its next run.
+            </p>
+            <ul class="imageserver-paths-list" style="margin:0;">
+                <?php foreach ($paths as $path) : ?>
+                    <?php $this->render_path_row($path, $source, $pattern); ?>
+                <?php endforeach; ?>
+            </ul>
+            <p>
+                <input type="text" class="regular-text code" id="imageserver-new-path" placeholder="BC/BCSB51.png" spellcheck="false">
+                <button type="button" class="button" id="imageserver-add-path">Add image</button>
+            </p>
+        </div>
+        <script>
+            (function () {
+                var wrap = document.querySelector('.imageserver-paths');
+                if (!wrap) { return; }
+                var list = wrap.querySelector('.imageserver-paths-list');
+                var input = wrap.querySelector('#imageserver-new-path');
+                var add = wrap.querySelector('#imageserver-add-path');
+                var source = wrap.getAttribute('data-source');
+                var pattern = wrap.getAttribute('data-pattern');
+                var field = wrap.getAttribute('data-field');
+                function url(path) {
+                    var encoded = path.split('/').map(encodeURIComponent).join('/');
+                    return source + pattern.replace('{path}', encoded).replace('{size}', '').replace('{width}', '').replace('{height}', '');
+                }
+                function row(path) {
+                    var li = document.createElement('li');
+                    li.className = 'imageserver-path';
+                    li.style.cssText = 'display:flex;align-items:center;gap:8px;margin:0 0 6px;';
+                    var img = document.createElement('img');
+                    img.src = url(path);
+                    img.alt = '';
+                    img.width = 48;
+                    img.height = 48;
+                    img.style.cssText = 'object-fit:contain;background:#f0f0f1;border:1px solid #dcdcde;';
+                    var code = document.createElement('code');
+                    code.textContent = path;
+                    var hidden = document.createElement('input');
+                    hidden.type = 'hidden';
+                    hidden.name = field + '[]';
+                    hidden.value = path;
+                    var button = document.createElement('button');
+                    button.type = 'button';
+                    button.className = 'button-link imageserver-remove';
+                    button.style.color = '#b32d2e';
+                    button.textContent = 'Delete';
+                    li.appendChild(img);
+                    li.appendChild(code);
+                    li.appendChild(hidden);
+                    li.appendChild(button);
+                    return li;
+                }
+                add.addEventListener('click', function () {
+                    var path = input.value.trim();
+                    if (path === '') { input.focus(); return; }
+                    list.appendChild(row(path));
+                    input.value = '';
+                    input.focus();
+                });
+                input.addEventListener('keydown', function (event) {
+                    if (event.key === 'Enter') { event.preventDefault(); add.click(); }
+                });
+                list.addEventListener('click', function (event) {
+                    var button = event.target.closest('.imageserver-remove');
+                    if (button) { button.closest('li').remove(); }
+                });
+            })();
+        </script>
+        <?php
+    }
+
+    private function render_path_row($path, $source, $pattern)
+    {
+        $encoded = implode('/', array_map('rawurlencode', explode('/', ltrim(trim($path), '/'))));
+        $url = untrailingslashit($source) . strtr($pattern, [
+            '{path}' => $encoded,
+            '{size}' => '',
+            '{width}' => '',
+            '{height}' => '',
+        ]);
+        ?>
+        <li class="imageserver-path" style="display:flex;align-items:center;gap:8px;margin:0 0 6px;">
+            <img src="<?php echo esc_url($url); ?>" alt="" width="48" height="48" style="object-fit:contain;background:#f0f0f1;border:1px solid #dcdcde;">
+            <code><?php echo esc_html($path); ?></code>
+            <input type="hidden" name="<?php echo esc_attr(self::PRODUCT_FIELD); ?>[]" value="<?php echo esc_attr($path); ?>">
+            <button type="button" class="button-link imageserver-remove" style="color:#b32d2e;">Delete</button>
+        </li>
         <?php
     }
 
@@ -101,7 +185,7 @@ class IS_Product_Meta
         }
 
         $raw = isset($_POST[self::PRODUCT_FIELD]) ? wp_unslash($_POST[self::PRODUCT_FIELD]) : '';
-        $paths = $this->normalize_paths(is_string($raw) ? $raw : '');
+        $paths = $this->normalize_paths($raw);
 
         if ($paths) {
             update_post_meta($post_id, self::PRODUCT_KEY, $paths);
@@ -192,7 +276,7 @@ class IS_Product_Meta
                 continue;
             }
 
-            $path = trim((string) $item);
+            $path = sanitize_text_field(trim((string) $item));
 
             if ($path === '' || in_array($path, $paths, true)) {
                 continue;

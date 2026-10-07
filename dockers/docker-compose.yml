@@ -13,7 +13,7 @@ services:
       - imageserver
 
   wordpress:
-    image: wordpress:7.1-apache
+    image: wordpress:latest
     container_name: imageserver_wordpress
     environment:
       WORDPRESS_DB_HOST: db
