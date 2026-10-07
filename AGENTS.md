@@ -14,7 +14,6 @@ plugins/plugin-check/                    vendored Plugin Check 2.1.0, bind-mount
 dockers/docker-compose.yml                nginx-proxy + WordPress + MariaDB + phpmyadmin + wpcli
 dockers/nginx/wordpress.conf              per-vhost snippet for nginx-proxy (64m body cap)
 dockers/certs/_.app.local/                shared *.app.local cert, copied from tibellus, gitignored
-dumps/                                     local DB backups (gitignored), written by ask.sh task 9
 ```
 
 `plugins/` holds third-party plugins that are tracked in git on purpose, so the versions are pinned and the code can be edited host-side. All three are bind-mounted **read-write** into **both** the `wordpress` and `wpcli` services — the wpcli mount must match or `wp plugin list` / `activate` would act on a different copy than the site serves. Host files are `1000:33` and group-writable so `www-data` (uid 33) can write; WordPress can therefore update the plugins in place, which will leave local modifications in `git status`. `ask.sh` task 11 activates the vendored copies rather than installing from wordpress.org, and only falls back to a download if `plugins/<slug>` is missing.
@@ -60,7 +59,7 @@ Gallery index comes from `array_search($attachment_id, get_gallery_image_ids())`
 | phpmyadmin | imageserver_phpmyadmin | https://phpmyadmin.app.local, http://127.0.0.1:8081 |
 | wpcli | imageserver_wpcli | `profiles: [setup]`, never starts with the stack |
 
-`ask.sh` is the entry point: task 1 runs the stack in the foreground (logs stream, Ctrl+C stops), 2 starts it detached, 3 is status, 4/5 stop and restart, 6/7 shell into WordPress or MariaDB, 8 exports the seed to `dockers/init`, 9 exports a timestamped local backup to `dumps/`, 10 imports a dump, 11 installs WordPress + WooCommerce + activates the plugin, 12/13 activate and deactivate the plugin, 14 lists all plugins, 15 is a wp-cli passthrough, 16/17 remove containers with or without volumes. WordPress sees https correctly through the proxy because core's `wp_fix_server_vars()` honours `X-Forwarded-Proto`.
+`ask.sh` is the entry point: task 1 runs the stack in the foreground (logs stream, Ctrl+C stops), 2 starts it detached, 3 is status, 4/5 stop and restart, 6/7 shell into WordPress or MariaDB, 8 exports the seed to `dockers/init`, 9 exports a local dump to `dockers/init/imageserver.sql.gz` (overwrites the seed), 10 imports a dump, 11 installs WordPress + WooCommerce + activates the plugin, 12/13 activate and deactivate the plugin, 14 lists all plugins, 15 is a wp-cli passthrough, 16/17 remove containers with or without volumes. WordPress sees https correctly through the proxy because core's `wp_fix_server_vars()` honours `X-Forwarded-Proto`.
 
 DB credentials come from `WORDPRESS_DB_*` / `MARIADB_ROOT_PASSWORD` env vars, all defaulting to `imageserver` / `imageserver-root` — test-only values, never reuse them.
 

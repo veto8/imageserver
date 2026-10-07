@@ -39,8 +39,5 @@ desktop.ini
 *.pem
 *.key
 
-# Local DB dumps (ask.sh task 9)
-/dumps/
-
 # TLS certificates (ask.sh tasks 1/2)
 /dockers/certs/

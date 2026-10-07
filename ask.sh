@@ -38,7 +38,7 @@ DB_PASS="${WORDPRESS_DB_PASSWORD:-imageserver}"
 DB_ROOT_PASS="${MARIADB_ROOT_PASSWORD:-imageserver-root}"
 
 INIT_DIR="$DIR/dockers/init"
-DUMP_DIR="$DIR/dumps"
+DUMP_DIR="$INIT_DIR"
 WP_TITLE="Image Server Test"
 WP_USER="admin"
 WP_PASS="admin"
@@ -325,7 +325,7 @@ export_db_local() {
   stack_up || { echo "Stack is not running - start it with task 1 (foreground) or 2 (background) first."; return 1; }
   mkdir -p "$DUMP_DIR" || return 1
   local out
-  out="$DUMP_DIR/${DB_NAME}-$(date +%Y%m%d-%H%M%S).sql.gz"
+  out="$DUMP_DIR/${DB_NAME}.sql.gz"
   echo "Dumping $DB_NAME ..."
   if docker exec "$DB" sh -c 'command -v mariadb-dump >/dev/null && echo yes' | grep -q yes; then
     docker exec "$DB" mariadb-dump -u"$DB_USER" -p"$DB_PASS" --single-transaction --databases "$DB_NAME" | gzip > "$out"
@@ -334,7 +334,7 @@ export_db_local() {
   fi
   [ -s "$out" ] || { echo "Dump failed or empty: $out"; rm -f "$out"; return 1; }
   echo "Wrote $out ($(du -h "$out" | cut -f1))"
-  echo "  dumps/ is gitignored - a local backup, not the seed."
+  echo "  saved to dockers/init - a fresh stack loads every dump in that dir."
 }
 
 list_dumps() {
@@ -463,7 +463,7 @@ while true; do
   echo "  6  Enter WordPress container"
   echo "  7  Enter DB (mariadb, root)"
   echo "  8  Export DB (seed) - dump to dockers/init (a fresh stack loads it)"
-  echo "  9  Export DB (local) - timestamped dump to dumps/"
+  echo "  9  Export DB (local) - dump to dockers/init/imageserver.sql.gz"
   echo " 10  Import DB - drop + reload DB from a dump in dockers/init"
   echo " 11  Setup site - install WordPress, WooCommerce, activate plugin"
   echo " 12  Activate plugin - imageserver"
