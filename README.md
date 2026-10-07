@@ -30,7 +30,7 @@ The `{path}` placeholder is replaced with the product image path. The `{size}` p
 The test stack is nginx-proxy, WordPress, MariaDB, phpMyAdmin, and an optional WP-CLI helper. Browser traffic goes through the TLS-terminating reverse proxy; only the proxy is exposed on the host.
 
 ```bash
-./ask.sh      # 1 foreground, 2 background, 3 status, 10 install WordPress + WooCommerce + plugin
+./ask.sh      # 1 foreground, 2 background, 3 status, 11 install WordPress + WooCommerce + plugin
 ```
 
 `ask.sh` tasks 1 and 2 add `www.app.local` and `phpmyadmin.app.local` to `/etc/hosts` and install the shared `*.app.local` certificate into `dockers/certs/` (gitignored). That certificate is the one Tibellus and exobank use — issued by `minica root ca`, which your browser already trusts, so there is no certificate warning. If no trusted source is found, set `IMAGESERVER_CERT_SRC` to a directory holding it, otherwise a self-signed certificate is generated and the browser will warn.
@@ -52,7 +52,7 @@ WooCommerce and Plugin Check are vendored in `plugins/` and bind-mounted read-on
 | WooCommerce | 11.1.2 | `plugins/woocommerce` |
 | Plugin Check | 2.1.0 | `plugins/plugin-check` |
 
-Because the mounts are writable, WordPress can update these in place. A wp.org update writes straight into `plugins/` and shows up as local modifications in `git status` — commit or discard them deliberately. Task 10 activates the vendored copies instead of downloading them.
+Because the mounts are writable, WordPress can update these in place. A wp.org update writes straight into `plugins/` and shows up as local modifications in `git status` — commit or discard them deliberately. Task 11 activates the vendored copies instead of downloading them.
 
 To drive the stack by hand instead:
 

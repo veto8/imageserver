@@ -38,6 +38,7 @@ DB_PASS="${WORDPRESS_DB_PASSWORD:-imageserver}"
 DB_ROOT_PASS="${MARIADB_ROOT_PASSWORD:-imageserver-root}"
 
 INIT_DIR="$DIR/dockers/init"
+DUMP_DIR="$DIR/dumps"
 WP_TITLE="Image Server Test"
 WP_USER="admin"
 WP_PASS="admin"
@@ -317,7 +318,23 @@ export_db() {
   echo "  A fresh stack loads this on its own: compose mounts dockers/init as"
   echo "  /docker-entrypoint-initdb.d, so 'down -v' and then task 2 restore it."
   echo "  That only happens on an empty data volume - an existing db_data is left alone."
-  echo "  Task 9 imports a dump from the same directory."
+  echo "  Task 10 imports a dump from the same directory."
+}
+
+export_db_local() {
+  stack_up || { echo "Stack is not running - start it with task 1 (foreground) or 2 (background) first."; return 1; }
+  mkdir -p "$DUMP_DIR" || return 1
+  local out
+  out="$DUMP_DIR/${DB_NAME}-$(date +%Y%m%d-%H%M%S).sql.gz"
+  echo "Dumping $DB_NAME ..."
+  if docker exec "$DB" sh -c 'command -v mariadb-dump >/dev/null && echo yes' | grep -q yes; then
+    docker exec "$DB" mariadb-dump -u"$DB_USER" -p"$DB_PASS" --single-transaction --databases "$DB_NAME" | gzip > "$out"
+  else
+    docker exec "$DB" mysqldump -u"$DB_USER" -p"$DB_PASS" --single-transaction --databases "$DB_NAME" | gzip > "$out"
+  fi
+  [ -s "$out" ] || { echo "Dump failed or empty: $out"; rm -f "$out"; return 1; }
+  echo "Wrote $out ($(du -h "$out" | cut -f1))"
+  echo "  dumps/ is gitignored - a local backup, not the seed."
 }
 
 list_dumps() {
@@ -445,15 +462,16 @@ while true; do
   echo "  5  Restart - restart the stack"
   echo "  6  Enter WordPress container"
   echo "  7  Enter DB (mariadb, root)"
-  echo "  8  Export DB - dump to dockers/init (a fresh stack loads it)"
-  echo "  9  Import DB - drop + reload DB from a dump in dockers/init"
-  echo " 10  Setup site - install WordPress, WooCommerce, activate plugin"
-  echo " 11  Activate plugin - imageserver"
-  echo " 12  Deactivate plugin - imageserver"
-  echo " 13  List plugins - name, status, version"
-  echo " 14  wp-cli - run a wp command, e.g. 14 option get imageserver_settings"
-  echo " 15  Remove containers (keeps volumes)"
-  echo " 16  Remove containers AND volumes (destructive - wipes data)"
+  echo "  8  Export DB (seed) - dump to dockers/init (a fresh stack loads it)"
+  echo "  9  Export DB (local) - timestamped dump to dumps/"
+  echo " 10  Import DB - drop + reload DB from a dump in dockers/init"
+  echo " 11  Setup site - install WordPress, WooCommerce, activate plugin"
+  echo " 12  Activate plugin - imageserver"
+  echo " 13  Deactivate plugin - imageserver"
+  echo " 14  List plugins - name, status, version"
+  echo " 15  wp-cli - run a wp command, e.g. 15 option get imageserver_settings"
+  echo " 16  Remove containers (keeps volumes)"
+  echo " 17  Remove containers AND volumes (destructive - wipes data)"
   echo "  0  Exit"
   if ! read -rp "Task: " task; then
     break
@@ -467,14 +485,15 @@ while true; do
     6) enter_app ;;
     7) enter_db ;;
     8) export_db ;;
-    9) import_db ;;
-    10) setup_site ;;
-    11) activate_plugin ;;
-    12) deactivate_plugin ;;
-    13) list_plugins ;;
-    14) read -rp "wp arguments: " -a wp_args; wpcli "${wp_args[@]}" ;;
-    15) remove_containers ;;
-    16) remove_all ;;
+    9) export_db_local ;;
+    10) import_db ;;
+    11) setup_site ;;
+    12) activate_plugin ;;
+    13) deactivate_plugin ;;
+    14) list_plugins ;;
+    15) read -rp "wp arguments: " -a wp_args; wpcli "${wp_args[@]}" ;;
+    16) remove_containers ;;
+    17) remove_all ;;
     0) break ;;
     *) echo "Unknown task" ;;
   esac
