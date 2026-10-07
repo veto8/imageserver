@@ -20,10 +20,21 @@ If the meta value is missing, the original WooCommerce image output is preserved
 Open **Settings → Image Server** to configure:
 
 - Image server source, such as `https://img.example.com`
+- Resize style — canvas or exact resize
 - Original image pattern, such as `/img/{path}`
-- Resized image pattern, such as `/canvas/{size}/{path}`
+- Resized image pattern, such as `/canvas/{width}/{path}`
 
-The `{path}` placeholder is replaced with the product image path. The `{size}` placeholder is replaced with the WooCommerce image size.
+Press **Fetch patterns from server** to read the pattern list from
+`{source}/api/patterns` and fill the fields. The fields stay editable, so you
+can override the fetched values. When the source changes, a warning on the
+settings screen reminds you to fetch again.
+
+The fetched manifest also carries working examples, shown below the fields as a
+**Server examples** table with a link and a live image preview for each
+pattern. If the previews load, the image server is reachable and serving files.
+
+The `{path}` placeholder is replaced with the product image path and
+`{width}`/`{height}` with the WooCommerce image size in pixels.
 
 ## Test stack
 
@@ -45,7 +56,7 @@ The proxy binds host ports `80`/`443` by default. Override with `IMAGESERVER_HTT
 
 ## Plugins
 
-WooCommerce and Plugin Check are vendored in `plugins/` and bind-mounted read-only into both the `wordpress` and `wpcli` services, so they are version-controlled with this repo and editable on the host. `imageserver/` is mounted the same way.
+WooCommerce and Plugin Check are vendored in `plugins/` and bind-mounted read-only into both the `wordpress` and `wpcli` services, so they are version-controlled with this repo and editable on the host. `plugins/imageserver/` is mounted the same way.
 
 | Plugin | Version | Source |
 |--------|---------|--------|
